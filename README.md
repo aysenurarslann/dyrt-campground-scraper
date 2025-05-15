@@ -35,7 +35,7 @@ Proje aşağıdaki tablolardan oluşan bir veritabanı yapısı kullanır:
 1. Repoyu klonlayın:
 
    ```bash
-   git clone https://github.com/yourusername/dyrt-scraper.git
+   git clone https://github.com/aysenurarslann/dyrt-campground-scraper.git
    cd dyrt-scraper
    ```
 
@@ -62,13 +62,13 @@ Proje aşağıdaki tablolardan oluşan bir veritabanı yapısı kullanır:
    SCHEDULE_INTERVAL=24
    ```
 
-### 🐳 Docker ile Kurulum
+###  Docker ile Kurulum
 
 ```bash
 docker-compose up -d
 ```
 
-## 🧪 Kullanım
+##  Kullanım
 
 ### Scraper'ı Çalıştırma
 
@@ -90,7 +90,7 @@ python main.py --api
 python main.py --schedule
 ```
 
-## 📡 API Endpointleri
+##  API Endpointleri
 
 | Yöntem | Endpoint | Açıklama |
 |--------|----------|----------|
@@ -103,7 +103,7 @@ python main.py --schedule
 | `POST` | `/scheduler/start` | Zamanlanmış scraper'ı başlatır |
 | `POST` | `/scheduler/stop` | Zamanlanmış scraper'ı durdurur |
 
-## 🛠️ Veritabanı Yönetimi
+##  Veritabanı Yönetimi
 
 - Bu proje, SQLAlchemy ORM kullanarak veritabanı işlemlerini yönetir.
 - Veritabanı şeması uygulama ilk kez çalıştırıldığında otomatik olarak oluşturulur.
