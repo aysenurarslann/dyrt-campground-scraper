@@ -109,6 +109,4 @@ python main.py --schedule
 - Veritabanı şeması uygulama ilk kez çalıştırıldığında otomatik olarak oluşturulur.
 - Bağlantı ayarları `src/config.py` üzerinden veya `.env` dosyası ile yapılandırılabilir.
 
-## 📄 Lisans
 
-Bu proje MIT Lisansı ile lisanslanmıştır.
