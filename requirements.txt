@@ -23,7 +23,7 @@ tenacity==8.2.3
 # Logging
 loguru==0.7.2
 
-# Geocoding (for bonus)
+# Geocoding 
 geopy==2.4.1
 
 # Async
