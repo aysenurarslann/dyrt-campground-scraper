@@ -1,154 +1,114 @@
-#endpoint.py
+# src/api/endpoints.py - Düzeltilmiş versiyon
 """
-API endpoints for controlling the scraper
+FastAPI endpoints for The Dyrt scraper
 """
-import asyncio
-import threading
-from typing import Dict, List, Any
-
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
+import os
+from typing import List, Optional
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 import uvicorn
 
-from src.config import API_HOST, API_PORT, logger
-from src.scraper.dyrt_scraper import DyrtScraper
-from src.database.db import get_all_campgrounds, get_campground_by_id, get_scraper_logs
-from src.utils.scheduler import setup_scheduler
+from src.config import logger
+from src.database.db import get_campgrounds_from_db, get_campground_by_id
+from src.models.campground import Campground
 
+# Initialize FastAPI app
 app = FastAPI(
     title="The Dyrt Scraper API",
-    description="API for controlling The Dyrt web scraper",
+    description="API for accessing scraped campground data",
     version="1.0.0"
 )
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Store scheduler instance
-scheduler = None
-
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "The Dyrt Scraper API"}
+    return {"message": "The Dyrt Scraper API", "version": "1.0.0"}
 
-
-@app.post("/scraper/run", status_code=202)
-async def run_scraper(background_tasks: BackgroundTasks):
+@app.get("/campgrounds", response_model=List[Campground])
+async def get_campgrounds(
+    limit: int = Query(default=100, le=1000, description="Maximum number of campgrounds to return"),
+    offset: int = Query(default=0, ge=0, description="Number of campgrounds to skip"),
+    state: Optional[str] = Query(default=None, description="Filter by state/administrative area"),
+    min_rating: Optional[float] = Query(default=None, ge=0, le=5, description="Minimum rating filter")
+):
     """
-    Run the scraper in the background
+    Get campgrounds with optional filtering
     """
-    # Run in background task
-    background_tasks.add_task(run_scraper_task)
-    
-    return {"message": "Scraper started in the background"}
-
-
-async def run_scraper_task():
-    """Background task for running the scraper"""
-    logger.info("Starting scraper from API request")
-    scraper = DyrtScraper()
     try:
-        result = await scraper.run()
-        logger.success(f"Scraper completed: {result}")
-        return result
+        campgrounds = await get_campgrounds_from_db(
+            limit=limit, 
+            offset=offset, 
+            state=state, 
+            min_rating=min_rating
+        )
+        return campgrounds
     except Exception as e:
-        logger.error(f"Error running scraper: {e}")
-        raise
+        logger.error(f"Error fetching campgrounds: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-
-@app.get("/scraper/status")
-async def get_status():
-    """
-    Get the status of the scraper
-    """
-    # Get the latest scraper log
-    logs = await get_scraper_logs()
-    if not logs:
-        return {"status": "Never run"}
-    
-    latest_log = logs[0]
-    return {
-        "status": latest_log["status"],
-        "last_run": latest_log["start_time"],
-        "records_processed": latest_log["records_processed"],
-        "records_added": latest_log["records_added"],
-        "records_updated": latest_log["records_updated"],
-    }
-
-
-@app.post("/scheduler/start")
-async def start_scheduler():
-    """
-    Start the scheduler
-    """
-    global scheduler
-    if scheduler:
-        return {"message": "Scheduler already running"}
-    
-    scheduler = setup_scheduler()
-    return {"message": "Scheduler started"}
-
-
-@app.post("/scheduler/stop")
-async def stop_scheduler():
-    """
-    Stop the scheduler
-    """
-    global scheduler
-    if not scheduler:
-        return {"message": "Scheduler not running"}
-    
-    scheduler.shutdown()
-    scheduler = None
-    return {"message": "Scheduler stopped"}
-
-
-@app.get("/campgrounds")
-async def get_campgrounds():
-    """
-    Get all campgrounds
-    """
-    campgrounds = await get_all_campgrounds()
-    return {"campgrounds": campgrounds, "count": len(campgrounds)}
-
-
-@app.get("/campgrounds/{campground_id}")
+@app.get("/campgrounds/{campground_id}", response_model=Campground)
 async def get_campground(campground_id: str):
     """
-    Get a campground by ID
+    Get a specific campground by ID
     """
-    campground = await get_campground_by_id(campground_id)
-    if not campground:
-        raise HTTPException(status_code=404, detail="Campground not found")
-    
-    return campground
+    try:
+        campground = await get_campground_by_id(campground_id)
+        if not campground:
+            raise HTTPException(status_code=404, detail="Campground not found")
+        return campground
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching campground {campground_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-
-@app.get("/logs")
-async def get_logs():
+@app.get("/health")
+async def health_check():
     """
-    Get all scraper logs
+    Health check endpoint
     """
-    logs = await get_scraper_logs()
-    return {"logs": logs, "count": len(logs)}
-
+    return {"status": "healthy", "message": "API is running"}
 
 def start_api():
     """
-    Start the API server
+    Start the API server - DÜZELTILMIŞ VERSİYON
     """
-    # Run in a separate thread
-    threading.Thread(
-        target=lambda: uvicorn.run(app, host=API_HOST, port=API_PORT, log_level="info"),
-        daemon=True
-    ).start()
+    # Environment variables
+    API_HOST = os.getenv("API_HOST", "0.0.0.0")
+    API_PORT = int(os.getenv("API_PORT", "8000"))
     
-    logger.info(f"API server started at http://{API_HOST}:{API_PORT}")
+    logger.info(f"Starting API server at {API_HOST}:{API_PORT}")
+    
+    # DÜZELTME: asyncio.run kullanmak yerine direkt uvicorn.run
+    uvicorn.run(
+        "src.api.endpoints:app",  # Module path to app
+        host=API_HOST, 
+        port=API_PORT,
+        reload=False,  # Production'da False olmalı
+        log_level="info"
+    )
+
+# Alternative async version (if needed)
+async def start_api_async():
+    """
+    Async version of API starter
+    """
+    import uvicorn
+    
+    API_HOST = os.getenv("API_HOST", "0.0.0.0")
+    API_PORT = int(os.getenv("API_PORT", "8000"))
+    
+    logger.info(f"Starting API server at {API_HOST}:{API_PORT}")
+    
+    config = uvicorn.Config(
+        app=app,
+        host=API_HOST,
+        port=API_PORT,
+        log_level="info"
+    )
+    
+    server = uvicorn.Server(config)
+    await server.serve()
+
+if __name__ == "__main__":
+    start_api()
