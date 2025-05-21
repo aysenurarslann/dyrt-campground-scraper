@@ -9,7 +9,7 @@ from loguru import logger
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Database configuration
-DB_URL = os.environ.get("DB_URL")
+DB_URL = os.environ.get("DB_URL", "postgresql://user:password@localhost:5432/case_study")
 
 # TheDyrt API configuration
 DYRT_BASE_URL = "https://thedyrt.com"
