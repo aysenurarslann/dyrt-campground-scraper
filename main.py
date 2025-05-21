@@ -1,22 +1,28 @@
 #main.py
+"""
+Main entrypoint for The Dyrt web scraper case study.
 
+Usage:
+    The scraper can be run directly (`python main.py`) or via Docker Compose (`docker compose up`).
+
+If you have any questions in mind you can connect to me directly via info@smart-maple.com
+"""
 import argparse
-
 import asyncio
 
 from src.config import logger
 from src.database.db import init_db
 from src.scraper.dyrt_scraper import DyrtScraper
 from src.utils.scheduler import setup_scheduler
-from src.api.endpoints import start_api
 
 
-async def main():
+async def async_main():
+    """Async main function for scraper operations"""
     parser = argparse.ArgumentParser(description='The Dyrt Web Scraper')
     parser.add_argument('--scrape', action='store_true', help='Run scraper immediately')
     parser.add_argument('--schedule', action='store_true', help='Setup scheduled scraping')
     parser.add_argument('--api', action='store_true', help='Start API server')
-    parser.add_argument('--test', action='store_true', help='Run API test')  # Test için yeni argüman
+    parser.add_argument('--test', action='store_true', help='Run API test')
     args = parser.parse_args()
 
     # Initialize the database
@@ -41,11 +47,6 @@ async def main():
         logger.info("Setting up scheduler...")
         setup_scheduler()
         
-    if args.api:
-        # Start API server
-        logger.info("Starting API server...")
-        start_api()
-    
     # If no arguments provided, run scraper once
     if not any(vars(args).values()):
         logger.info("No arguments provided. Running scraper once...")
@@ -53,5 +54,24 @@ async def main():
         await scraper.run()
 
 
+def main():
+    """Main function - handles API vs async operations"""
+    parser = argparse.ArgumentParser(description='The Dyrt Web Scraper')
+    parser.add_argument('--scrape', action='store_true', help='Run scraper immediately')
+    parser.add_argument('--schedule', action='store_true', help='Setup scheduled scraping')
+    parser.add_argument('--api', action='store_true', help='Start API server')
+    parser.add_argument('--test', action='store_true', help='Run API test')
+    args = parser.parse_args()
+    
+    if args.api:
+        # Start API server synchronously
+        logger.info("Starting API server...")
+        from src.api.endpoints import start_api
+        start_api()
+    else:
+        # Run async operations
+        asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
